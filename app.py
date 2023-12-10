@@ -146,5 +146,5 @@ def sudoku_video_parent():
         output_video_path = sudoku_video(video_path)
         st.video("uploaded_video.mp4")
 
-sudoku_video_parent()
-#sudoku_photo()
+#sudoku_video_parent()
+sudoku_photo()
