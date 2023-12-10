@@ -4,12 +4,38 @@ import numpy as np
 import enc_and_dec
 from s import sudoku
 from sudoku import rotate_image, rotate_image_counter_clockwise
+import matplotlib.pyplot as plt
+import time
 
+def plot_color_histogram(img_array, title):
+    color = ('b','g','r')
+    plt.figure(figsize=(6, 6))
+    for i, col in enumerate(color):
+        histr = cv2.calcHist([img_array],[i],None,[256],[0,256])
+        plt.plot(histr, color = col)
+        plt.xlim([0,256])
+    plt.title(title)
+    st.pyplot(plt)
+
+def analyze_image(img_array, title):
+    # Calculate and display the mean and standard deviation of the pixel values for each channel
+    mean_r = img_array[:, :, 0].mean()
+    std_r = img_array[:, :, 0].std()
+    st.write(f"{title} - Mean pixel value (Red): {mean_r:.2f}, Standard deviation: {std_r:.2f}")
+
+    mean_g = img_array[:, :, 1].mean()
+    std_g = img_array[:, :, 1].std()
+    st.write(f"{title} - Mean pixel value (Green): {mean_g:.2f}, Standard deviation: {std_g:.2f}")
+
+    mean_b = img_array[:, :, 2].mean()
+    std_b = img_array[:, :, 2].std()
+    st.write(f"{title} - Mean pixel value (Blue): {mean_b:.2f}, Standard deviation: {std_b:.2f}")
 
 def show_image(img_array, title):
     st.image(img_array, use_column_width=True, caption=title)
 
 def process_image(image_path):
+    times = {}
     # Load the image
     img = Image.open(image_path)
     img_array = np.array(img)
@@ -17,51 +43,82 @@ def process_image(image_path):
 
     st.write("Encryption")
     # Apply threshold_image function
+    start_time = time.time()
     enc_and_dec.threshold_image(image_path, randomNumber=40)
+    load_time = time.time() - start_time
+    times['Threshold_Time'] = load_time
     img_threshold = Image.open("threshold_image.jpg")
     img_threshold_array = np.array(img_threshold)
     show_image(img_threshold_array, "Threshold Image")
 
     # Apply pad_and_shuffle_image function
+    start_time = time.time()
     seed = enc_and_dec.pad_and_shuffle_image("threshold_image.jpg", SudokuSize=9)
+    load_time = time.time() - start_time
+    times['Pad_Shuffle_Time'] = load_time
     with open('keys.txt', 'a') as f:
         f.write(f'{seed}\n')
     img_padded_shuffled = Image.open("padded_and_shuffled_image.jpg")
     img_padded_shuffled_array = np.array(img_padded_shuffled)
     show_image(img_padded_shuffled_array, "Padded and Shuffled Image")
 
+    start_time = time.time()
     sudoku("padded_and_shuffled_image.jpg")
+    load_time = time.time() - start_time
+    times['Sudoku_Time'] = load_time
     img_sudukoed = Image.open("shuffled_image.jpg")
     img_sudukoed_array = np.array(img_sudukoed)
     show_image(img_sudukoed_array, "Image after Sudoku Transformation")
 
+    start_time = time.time()
     rotate_image("shuffled_image.jpg")
+    load_time = time.time() - start_time
+    times['Rotate_Time'] = load_time
     image_rotated = Image.open("rotated_image.jpg")
     image_rotated_array = np.array(image_rotated)
     show_image(image_rotated_array, "Image after Rotation")
 
     st.write("Decryption")
 
+    start_time = time.time()
     rotate_image_counter_clockwise("rotated_image.jpg")
+    load_time = time.time() - start_time
+    times['Decrypt_Rotate_Time'] = load_time
     image_rotated_cc = Image.open("rotated_image_counter_clockwise.jpg")
     image_rotated_array_cc = np.array(image_rotated_cc)
     show_image(image_rotated_array_cc, "Image after Rotation")
 
+    start_time = time.time()
     im = Image.open("unshuffled_image.jpg")
     im_ar = np.array(im)
+    times['Decrypt_Sudoku_Time'] = times['Sudoku_Time']
     show_image(im_ar, "Revese Sudoku Transformation")
 
-    # Apply unshuffle_and_unpad_image function
+    start_time = time.time()
     enc_and_dec.unshuffle_and_unpad_image("unshuffled_image.jpg", original_width=img.width, original_height=img.height, SudokuSize=9)
+    times['Decrypt_Unpad_Unshuffle_Time'] = times['Sudoku_Time']
     img_unshuffled_unpadded = Image.open("unshuffled_and_unpadded_image.jpg")
     img_unshuffled_unpadded_array = np.array(img_unshuffled_unpadded)
     show_image(img_unshuffled_unpadded_array, "Unshuffled and Unpadded Image")
 
-    # Apply decrypt_threshold_image function
+    start_time = time.time()
     enc_and_dec.decrypt_threshold_image("unshuffled_and_unpadded_image.jpg", image_path, randomNumber=40)
+    load_time = time.time() - start_time
+    times['Decrypt_Threshold_Time'] = times['Sudoku_Time']
     img_decrypted = Image.open("decrypted_image.jpg")
     img_decrypted_array = np.array(img_decrypted)
     show_image(img_decrypted_array, "Decrypted Image")
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(list(times.keys()), list(times.values()), marker='o')
+    plt.xlabel('Step')
+    plt.ylabel('Time (seconds)')
+    plt.title('Time taken for each step')
+    st.pyplot(plt)
+    analyze_image(img_array, "Original Image")
+    analyze_image(img_threshold_array, "Threshold Image")
+    plot_color_histogram(img_array, "Original Image Color Histogram")
+    plot_color_histogram(image_rotated_array, "Threshold Image Color Histogram")
 
 import cv2
 
