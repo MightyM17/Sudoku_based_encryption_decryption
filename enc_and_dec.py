@@ -36,7 +36,6 @@ def decrypt_threshold_image(image_path, og_img_path,randomNumber):
     img = Image.open(image_path)
     
     img_array = np.array(img)
-    og_img_array = np.array(Image.open(og_img_path))
 
     #randomNumber = np.trace(img_array)
 
@@ -44,7 +43,7 @@ def decrypt_threshold_image(image_path, og_img_path,randomNumber):
         for i in range(img_array.shape[0]):
             for j in range(img_array.shape[1]):
                 for k in range(img_array.shape[2]):
-                    if og_img_array[i, j, k] + randomNumber <= 255:
+                    if img_array[i, j, k] - randomNumber >= 0:
                         img_array[i, j, k] -= randomNumber
                     # if img_array[i, j, k] + randomNumber >= 0:
                     #     img_array[i, j, k] -= randomNumber
