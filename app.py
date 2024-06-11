@@ -6,6 +6,11 @@ from s import sudoku
 from sudoku import rotate_image, rotate_image_counter_clockwise
 import matplotlib.pyplot as plt
 import time
+import cv2
+from skimage.feature import graycomatrix, graycoprops
+from skimage.color import rgb2gray
+from scipy.stats import entropy
+from skimage.filters import sobel
 
 def plot_color_histogram(img_array, title):
     color = ('b','g','r')
@@ -17,22 +22,52 @@ def plot_color_histogram(img_array, title):
     plt.title(title)
     st.pyplot(plt)
 
+import pandas as pd
+
 def analyze_image(img_array, title):
-    # Calculate and display the mean and standard deviation of the pixel values for each channel
+    # Calculate the mean and standard deviation of the pixel values for each channel
     mean_r = img_array[:, :, 0].mean()
     std_r = img_array[:, :, 0].std()
-    st.write(f"{title} - Mean pixel value (Red): {mean_r:.2f}, Standard deviation: {std_r:.2f}")
 
     mean_g = img_array[:, :, 1].mean()
     std_g = img_array[:, :, 1].std()
-    st.write(f"{title} - Mean pixel value (Green): {mean_g:.2f}, Standard deviation: {std_g:.2f}")
 
     mean_b = img_array[:, :, 2].mean()
     std_b = img_array[:, :, 2].std()
-    st.write(f"{title} - Mean pixel value (Blue): {mean_b:.2f}, Standard deviation: {std_b:.2f}")
+
+    # Create a DataFrame and display it in Streamlit
+    data = {'Mean': [mean_r, mean_g, mean_b], 'Standard Deviation': [std_r, std_g, std_b]}
+    df = pd.DataFrame(data, index=['Red', 'Green', 'Blue'])
+    st.write(f"{title} - Pixel Intensity Analysis")
+    st.dataframe(df)
 
 def show_image(img_array, title):
     st.image(img_array, use_column_width=True, caption=title)
+
+from skimage.util import img_as_ubyte
+
+def analyze_image_glcm(img_array, title):
+    # Convert the image to grayscale for texture analysis
+    gray_img = rgb2gray(img_array)
+
+    # Convert the floating point grayscale image to unsigned byte
+    gray_img = img_as_ubyte(gray_img)
+
+    # Calculate texture features from the gray-level co-occurrence matrix (GLCM)
+    glcm = graycomatrix(gray_img, [1], [0], 256, symmetric=True, normed=True)
+    contrast = graycoprops(glcm, 'contrast')[0, 0]
+    energy = graycoprops(glcm, 'energy')[0, 0]
+    homogeneity = graycoprops(glcm, 'homogeneity')[0, 0]
+
+    # Calculate entropy
+    img_entropy = entropy(img_array.ravel())
+
+    # Apply edge detection
+    edges = sobel(gray_img)
+    edge_count = np.count_nonzero(edges)
+
+    # Display the results
+    st.write(f"{title} - Contrast: {contrast:.2f}, Energy: {energy:.2f}, Homogeneity: {homogeneity:.2f}, Entropy: {img_entropy:.2f}, Edge count: {edge_count}")
 
 def process_image(image_path):
     times = {}
@@ -104,7 +139,7 @@ def process_image(image_path):
     start_time = time.time()
     enc_and_dec.decrypt_threshold_image("unshuffled_and_unpadded_image.jpg", image_path, randomNumber=40)
     load_time = time.time() - start_time
-    times['Decrypt_Threshold_Time'] = times['Sudoku_Time']
+    times['Decrypt_Threshold_Time'] = load_time
     img_decrypted = Image.open("decrypted_image.jpg")
     img_decrypted_array = np.array(img_decrypted)
     show_image(img_decrypted_array, "Decrypted Image")
@@ -116,11 +151,11 @@ def process_image(image_path):
     plt.title('Time taken for each step')
     st.pyplot(plt)
     analyze_image(img_array, "Original Image")
-    analyze_image(img_threshold_array, "Threshold Image")
+    analyze_image(img_threshold_array, "Envrypted Image")
     plot_color_histogram(img_array, "Original Image Color Histogram")
     plot_color_histogram(image_rotated_array, "Threshold Image Color Histogram")
-
-import cv2
+    analyze_image_glcm(img_array, "Original Image")
+    analyze_image_glcm(img_threshold_array, "Encrypted Image")  
 
 def sudoku_video(video_path):
     # Open the video file
