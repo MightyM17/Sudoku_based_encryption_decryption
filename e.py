@@ -53,4 +53,4 @@ print("Original array:", original_arr)
 
 # Convert the shuffled image back to an Image object and save it
 shuffled_img = Image.fromarray(arr.astype(np.uint8))
-shuffled_img.save('shuffled_image.jpg')
+shuffled_img.save('shuffled_image.png')
