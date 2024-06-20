@@ -3,7 +3,7 @@ from PIL import Image
 import numpy as np
 import enc_and_dec
 from s import sudoku
-from sudoku import rotate_image, rotate_image_counter_clockwise
+from ssudoku import rotate_image, rotate_image_counter_clockwise
 import matplotlib.pyplot as plt
 import time
 import cv2
@@ -60,14 +60,16 @@ def analyze_image_glcm(img_array, title):
     homogeneity = graycoprops(glcm, 'homogeneity')[0, 0]
 
     # Calculate entropy
-    img_entropy = entropy(img_array.ravel())
+    # img_entropy = entropy(img_array.ravel())
+    import skimage.measure
+    img_entropy = skimage.measure.shannon_entropy(gray_img)
 
     # Apply edge detection
     edges = sobel(gray_img)
     edge_count = np.count_nonzero(edges)
 
     # Display the results
-    st.write(f"{title} - Contrast: {contrast:.2f}, Energy: {energy:.2f}, Homogeneity: {homogeneity:.2f}, Entropy: {img_entropy:.2f}, Edge count: {edge_count}")
+    st.write(f"{title} - Contrast: {contrast}, Energy: {energy}, Homogeneity: {homogeneity}, Entropy: {img_entropy}, Edge count: {edge_count}")
 
 def process_image(image_path):
     times = {}
@@ -144,6 +146,8 @@ def process_image(image_path):
     img_decrypted_array = np.array(img_decrypted)
     show_image(img_decrypted_array, "Decrypted Image")
 
+    st.write(times)
+    st.write(times['Threshold_Time'] + times['Pad_Shuffle_Time'] + times['Sudoku_Time'] + times['Rotate_Time'])
     plt.figure(figsize=(10, 5))
     plt.plot(list(times.keys()), list(times.values()), marker='o')
     plt.xlabel('Step')
@@ -151,11 +155,11 @@ def process_image(image_path):
     plt.title('Time taken for each step')
     st.pyplot(plt)
     analyze_image(img_array, "Original Image")
-    analyze_image(img_threshold_array, "Envrypted Image")
+    analyze_image(image_rotated_array, "Envrypted Image")
     plot_color_histogram(img_array, "Original Image Color Histogram")
-    plot_color_histogram(image_rotated_array, "Threshold Image Color Histogram")
+    plot_color_histogram(image_rotated_array, "Encrypted Image Color Histogram")
     analyze_image_glcm(img_array, "Original Image")
-    analyze_image_glcm(img_threshold_array, "Encrypted Image")  
+    analyze_image_glcm(image_rotated_array, "Encrypted Image")  
 
 def sudoku_video(video_path):
     # Open the video file
