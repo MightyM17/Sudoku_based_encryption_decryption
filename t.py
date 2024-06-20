@@ -260,6 +260,6 @@ c2_path = 'decrypted_image.png'
 # print("Unshuffled and unpadded image saved")
 # decrypt_threshold_image('unshuffled_and_unpadded_image.png', 16)
 # print("Decrypted image saved")
-npcr, uaci = calculate_npcr_and_uaci(c1_path, 'decrypted_image.png')
+npcr, uaci = calculate_npcr_and_uaci(c1_path, 'rotated_image.png')
 print(f"NPCR: {npcr}%")
 print(f"UACI: {uaci}%")
